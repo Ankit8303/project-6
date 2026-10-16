@@ -10,18 +10,31 @@ export async function createSession(opts: {
   workspaceId?: string;
   proxyCountryCode?: string;
   enableRecording?: boolean;
-}) {
-  const sessionId = "sess_" + Math.random().toString(36).slice(2, 11);
-  const session = await getOrCreateSession(sessionId, {
-    model: opts.model,
-    proxies: !!opts.proxyCountryCode,
-  });
+}): Promise<{
+  id?: string;
+  liveUrl?: string | null;
+  status?: string;
+  error?: string;
+}> {
+  try {
+    const sessionId = "sess_" + Math.random().toString(36).slice(2, 11);
+    const session = await getOrCreateSession(sessionId, {
+      model: opts.model,
+      proxies: !!opts.proxyCountryCode,
+    });
 
-  return {
-    id: session.id,
-    liveUrl: session.liveUrl,
-    status: session.status,
-  };
+    return {
+      id: session.id,
+      liveUrl: session.liveUrl,
+      status: session.status,
+    };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error("Failed to create session in server action:", msg);
+    return {
+      error: msg,
+    };
+  }
 }
 
 export async function getSessionStatus(id: string) {

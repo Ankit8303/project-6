@@ -40,6 +40,11 @@ export default function HomePage() {
         ...(validWorkspaceId && { workspaceId: validWorkspaceId }),
         ...(proxyCountryCode && { proxyCountryCode }),
       });
+      if (session.error || !session.id) {
+        setError(session.error || "Failed to start session.");
+        setIsCreating(false);
+        return;
+      }
       // Store task in sessionStorage to avoid exposing it in the URL
       sessionStorage.setItem(`task-${session.id}`, message);
       const liveUrl = session.liveUrl ? encodeURIComponent(session.liveUrl) : "";

@@ -104,10 +104,23 @@ export async function getOrCreateSession(
           console.warn("Could not retrieve Browserbase debug URL:", err);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to launch Browserbase browser:", err);
+      let errorMsg = err?.message || String(err);
+      if (err?.cause) {
+        const cause = err.cause;
+        const causeMsg = cause?.error?.message || cause?.message;
+        if (causeMsg) errorMsg = `${errorMsg}: ${causeMsg}`;
+      }
+      if (
+        errorMsg.includes("Failed to create a Browserbase session") ||
+        errorMsg.includes("402") ||
+        errorMsg.includes("Payment Required")
+      ) {
+        errorMsg = "Browserbase: Free plan browser minutes limit reached. Please upgrade your account at https://browserbase.com/plans or supply a key with available minutes.";
+      }
       if (process.env.VERCEL) {
-        throw new Error(`Failed to launch cloud browser on Browserbase: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(errorMsg);
       }
       browser = await localBrowser.launch({
         keepAlive: true,
