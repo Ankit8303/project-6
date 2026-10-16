@@ -1,0 +1,5 @@
+{
+  "env": {
+    "BROWSER_USE_API_KEY": "@browser-use-api-key"
+  }
+}
