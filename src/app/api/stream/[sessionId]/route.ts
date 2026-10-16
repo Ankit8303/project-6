@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(
   request: Request,
