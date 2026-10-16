@@ -4,6 +4,8 @@ import { tool } from "ai";
 import { z } from "zod";
 import { handleCaptchaResolution } from "./captcha-solver";
 import type { MessageResponse, AgentRole, InputRequestField } from "./types";
+import path from "path";
+import fs from "fs";
 
 export interface PendingInputRequest {
   requestId: string;
@@ -61,6 +63,20 @@ export async function getOrCreateSession(
     return existing;
   }
 
+  // Ensure Stagehand extension archive path is found in serverless environments
+  if (!process.env.STAGEHAND_EXTENSION_ARCHIVE_PATH) {
+    const candidatePaths = [
+      path.join(process.cwd(), "public", "stagehand-extension.zip"),
+      path.join(process.cwd(), "node_modules", "@browserbasehq", "stagehand", "dist", "assets", "stagehand-extension.zip"),
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        process.env.STAGEHAND_EXTENSION_ARCHIVE_PATH = p;
+        break;
+      }
+    }
+  }
+
   let browser: StagehandBrowser;
   let liveUrl: string | null = null;
 
@@ -89,13 +105,19 @@ export async function getOrCreateSession(
         }
       }
     } catch (err) {
-      console.warn("Failed to launch Browserbase browser, falling back to local:", err);
+      console.warn("Failed to launch Browserbase browser:", err);
+      if (process.env.VERCEL) {
+        throw new Error(`Failed to launch cloud browser on Browserbase: ${err instanceof Error ? err.message : String(err)}`);
+      }
       browser = await localBrowser.launch({
         keepAlive: true,
         headless: process.env.STAGEHAND_HEADED === "true" ? false : true,
       });
     }
   } else {
+    if (process.env.VERCEL) {
+      throw new Error("BROWSERBASE_API_KEY is required when running on Vercel. Local Chrome is unavailable in serverless environments.");
+    }
     browser = await localBrowser.launch({
       keepAlive: true,
       headless: process.env.STAGEHAND_HEADED === "true" ? false : true,
